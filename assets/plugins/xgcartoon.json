@@ -1,0 +1,21 @@
+{
+    "api": "8",
+    "type": "anime",
+    "name": "西瓜卡通",
+    "version": "1.0",
+    "muliSources": false,
+    "useWebview": true,
+    "useNativePlayer": true,
+    "usePost": false,
+    "useLegacyParser": false,
+    "adBlocker": true,
+    "userAgent": "",
+    "baseURL": "https://cn.xgcartoon.com/",
+    "searchURL": "https://cn.xgcartoon.com/search?q=@keyword",
+    "searchList": "//div[contains(@class,'topic-list-box')]",
+    "searchName": ".//div[contains(@class,'h3')]",
+    "searchResult": "./a[contains(@class,'topic-list-item')]",
+    "chapterRoads": "//div[contains(@class,'detail-right__volumes')]//div[contains(@class,'row')]",
+    "chapterResult": ".//a[contains(@class,'goto-chapter')]",
+    "referer": "https://cn.xgcartoon.com/"
+}

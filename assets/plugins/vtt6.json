@@ -1,0 +1,21 @@
+{
+    "api": "8",
+    "type": "anime",
+    "name": "vtt6",
+    "version": "1.0",
+    "muliSources": false,
+    "useWebview": true,
+    "useNativePlayer": true,
+    "usePost": false,
+    "useLegacyParser": false,
+    "adBlocker": true,
+    "userAgent": "",
+    "baseURL": "https://www.vtt6.com/",
+    "searchURL": "https://www.vtt6.com/search/?wd=@keyword",
+    "searchList": "//div[contains(@class,'search') and contains(@class,'container')]/ul/li",
+    "searchName": ".//h3/a",
+    "searchResult": ".//h3/a",
+    "chapterRoads": "//div[contains(@class,'playlist')]//ul[contains(@class,'list24')]",
+    "chapterResult": ".//a[contains(@href,'/play/')]",
+    "referer": "https://www.vtt6.com/"
+}

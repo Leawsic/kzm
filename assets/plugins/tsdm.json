@@ -1,0 +1,21 @@
+{
+    "api": "8",
+    "type": "anime",
+    "name": "tsdm",
+    "version": "1.0",
+    "muliSources": false,
+    "useWebview": true,
+    "useNativePlayer": true,
+    "usePost": false,
+    "useLegacyParser": false,
+    "adBlocker": true,
+    "userAgent": "",
+    "baseURL": "https://tsdm.cc/",
+    "searchURL": "https://tsdm.cc/search?q=@keyword",
+    "searchList": "//ul[contains(@class,'list-unstyled') and contains(@class,'g-2')]/li[contains(@class,'position-relative')]",
+    "searchName": ".//a[contains(@class,'stretched-link')]/div",
+    "searchResult": ".//a[contains(@class,'stretched-link')]",
+    "chapterRoads": "//ul[contains(@class,'list-unstyled') and contains(@class,'g-2')]",
+    "chapterResult": ".//a[contains(@class,'age-episode')]",
+    "referer": "https://tsdm.cc/"
+}
