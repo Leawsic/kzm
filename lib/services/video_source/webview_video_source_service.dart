@@ -102,6 +102,7 @@ class WebViewVideoSourceService implements IVideoSourceService {
         offset: event.offset,
         type: VideoSourceType.online,
         format: event.format,
+        httpHeaders: event.httpHeaders,
       );
     } catch (e) {
       if (e is VideoSourceCancelledException) {

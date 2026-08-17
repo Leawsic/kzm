@@ -25,11 +25,16 @@ class VideoSource {
   /// 解析视频源时确认的媒体格式提示
   final VideoSourceFormat format;
 
+  /// Headers observed in the WebView when the final media URL was discovered.
+  /// They take precedence over plugin defaults for the final media request.
+  final Map<String, String> httpHeaders;
+
   const VideoSource({
     required this.url,
     required this.offset,
     required this.type,
     this.format = VideoSourceFormat.auto,
+    this.httpHeaders = const {},
   });
 
   @override

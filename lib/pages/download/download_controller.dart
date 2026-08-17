@@ -571,17 +571,18 @@ abstract class _DownloadController with Store {
       KazumiLogger().i(
           'DownloadController: resolving video URL for episode ${request.episodeNumber} from $fullUrl');
 
+      VideoSource? source;
       String? m3u8Url;
       try {
         if (lease.isCancelled) {
           throw const VideoSourceCancelledException();
         }
-        final source = await lease.resolve(
+        source = await lease.resolve(
           fullUrl,
           useLegacyParser: plugin.useLegacyParser,
           timeout: const Duration(seconds: 30),
         );
-        m3u8Url = source.url;
+        m3u8Url = source!.url;
       } on VideoSourceTimeoutException {
         if (lease.isCancelled) {
           wasCancelled = true;
@@ -628,7 +629,10 @@ abstract class _DownloadController with Store {
 
       await _startBackgroundServiceIfNeeded();
 
-      final httpHeaders = plugin.buildHttpHeaders();
+      final httpHeaders = {
+        ...plugin.buildHttpHeaders(),
+        ...?source?.httpHeaders,
+      };
       bool adBlockerEnabled =
           _repository.getForceAdBlocker() || plugin.adBlocker;
 

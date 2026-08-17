@@ -637,10 +637,11 @@ abstract class _VideoPageController with Store implements Disposable {
               : currentPlugin.userAgent,
           if (currentPlugin.referer.isNotEmpty)
             'referer': currentPlugin.referer,
+          ...source.httpHeaders,
         },
         adBlockerEnabled: forceAdBlocker || currentPlugin.adBlocker,
         episodeTitle: resolvedEpisode.displayTitle,
-        referer: currentPlugin.referer,
+        referer: source.httpHeaders['referer'] ?? currentPlugin.referer,
         currentRoad: resolvedEpisode.roadIndex,
         coverUrl: bangumiItem.images['large'],
         bangumiName: bangumiItem.nameCn.isNotEmpty

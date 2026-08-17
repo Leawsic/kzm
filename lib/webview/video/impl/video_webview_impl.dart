@@ -4,6 +4,7 @@ import 'package:kazumi/services/storage/storage.dart';
 import 'package:kazumi/services/network/proxy_utils.dart';
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/webview/video/video_webview_controller.dart';
+import 'package:kazumi/webview/video/video_source_sniffer.dart';
 import 'package:flutter_inappwebview_platform_interface/flutter_inappwebview_platform_interface.dart';
 import 'package:flutter_inappwebview_android/flutter_inappwebview_android.dart'
     as android_webview;
@@ -79,13 +80,13 @@ class VideoWebviewImpl
   Future<void> loadUrl(String url, bool useLegacyParser,
       {int offset = 0}) async {
     await unloadPage();
+    this.useLegacyParser = useLegacyParser;
     if (!hasRegisteredHandlers) {
       _addJavaScriptHandlers(useLegacyParser);
       hasRegisteredHandlers = true;
     }
     count = 0;
     this.offset = offset;
-    this.useLegacyParser = useLegacyParser;
     isIframeLoaded = false;
     isVideoSourceLoaded = false;
     videoLoadingEventController.add(true);
@@ -105,57 +106,43 @@ class VideoWebviewImpl
           logEventController.add(message);
         });
 
-    if (useLegacyParser) {
-      logEventController.add('Adding JSBridgeDebug handler');
-      webviewController?.addJavaScriptHandler(
-          handlerName: 'JSBridgeDebug',
-          callback: (args) {
-            String message = args[0].toString();
-            logEventController.add('Callback received: $message');
-            logEventController.add(
-                'If there is audio but no video, please report it to the rule developer.');
-            if ((message.contains('http') || message.startsWith('//')) &&
-                !message.contains('googleads') &&
-                !message.contains('googlesyndication.com') &&
-                !message.contains('prestrain.html') &&
-                !message.contains('prestrain%2Ehtml') &&
-                !message.contains('adtrafficquality')) {
-              logEventController.add('Parsing video source $message');
-              String encodedUrl = Uri.encodeFull(message);
-              if (decodeVideoSource(encodedUrl) != encodedUrl) {
-                isIframeLoaded = true;
-                isVideoSourceLoaded = true;
-                videoLoadingEventController.add(false);
-                logEventController.add(
-                    'Loading video source ${decodeVideoSource(encodedUrl)}');
-                unloadPage();
-                final videoUrl = decodeVideoSource(encodedUrl);
-                notifyVideoSourceResolved(videoUrl);
-              }
-            }
-          });
-    } else {
-      logEventController.add('Adding VideoBridgeDebug handler');
-      webviewController?.addJavaScriptHandler(
-          handlerName: 'VideoBridgeDebug',
-          callback: (args) {
-            String message = args[0].toString();
-            logEventController.add('Callback received: $message');
-            if (message.contains('http') && !isVideoSourceLoaded) {
-              logEventController.add('Loading video source: $message');
+    logEventController.add('Adding JSBridgeDebug handler');
+    webviewController?.addJavaScriptHandler(
+        handlerName: 'JSBridgeDebug',
+        callback: (args) {
+          final message = args.isEmpty ? '' : args.first.toString();
+          if (!this.useLegacyParser || isVideoSourceLoaded) return;
+          if ((message.contains('http') || message.startsWith('//')) &&
+              !_isAdUrl(message.toLowerCase())) {
+            final encodedUrl = Uri.encodeFull(message);
+            final videoUrl = decodeVideoSource(encodedUrl);
+            if (videoUrl != encodedUrl) {
               isIframeLoaded = true;
               isVideoSourceLoaded = true;
               videoLoadingEventController.add(false);
-              unloadPage();
-              notifyVideoSourceResolved(message);
+              notifyVideoSourceResolved(videoUrl);
             }
-          });
-    }
+          }
+        });
+    logEventController.add('Adding VideoBridgeDebug handler');
+    webviewController?.addJavaScriptHandler(
+        handlerName: 'VideoBridgeDebug',
+        callback: (args) {
+          final payload = args.isEmpty ? null : args.first;
+          if (payload is Map) notifySniffedVideoSource(payload);
+        });
   }
 
   Future<void> _onLoadStart() async {
-    if (!useLegacyParser) {
+    if (!this.useLegacyParser) {
       logEventController.add('Injecting blob parser script (onLoadStart)');
+    }
+    await webviewController?.evaluateJavascript(
+      source: buildVideoSourceSnifferScript(
+        "payload => window.flutter_inappwebview.callHandler('VideoBridgeDebug', payload)",
+      ),
+    );
+    if (!this.useLegacyParser) {
       await webviewController?.evaluateJavascript(source: """
         try { window.flutter_inappwebview.callHandler('LogBridge', 'BlobParser script loaded: ' + window.location.href); } catch(e) {}
         const _r_text = window.Response.prototype.text;

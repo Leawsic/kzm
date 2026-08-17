@@ -14,6 +14,7 @@ typedef VideoParserEvent = ({
   String url,
   int offset,
   VideoSourceFormat format,
+  Map<String, String> httpHeaders,
 });
 
 abstract class VideoWebviewController<T> {
@@ -60,12 +61,53 @@ abstract class VideoWebviewController<T> {
   void notifyVideoSourceResolved(
     String url, {
     VideoSourceFormat format = VideoSourceFormat.auto,
+    Map<String, String> httpHeaders = const {},
   }) {
     _videoParserEventController.add((
       url: url,
       offset: offset,
       format: format,
+      httpHeaders: httpHeaders,
     ));
+  }
+
+  @protected
+  void notifySniffedVideoSource(Object? payload) {
+    if (isVideoSourceLoaded) return;
+    if (payload is String) {
+      if (!payload.startsWith('http')) return;
+      isIframeLoaded = true;
+      isVideoSourceLoaded = true;
+      videoLoadingEventController.add(false);
+      notifyVideoSourceResolved(payload);
+      return;
+    }
+    if (payload is! Map) return;
+    final rawUrl = payload['url'];
+    if (rawUrl is! String || !rawUrl.startsWith('http')) return;
+
+    final headers = <String, String>{};
+    final rawHeaders = payload['headers'];
+    if (rawHeaders is Map) {
+      for (final entry in rawHeaders.entries) {
+        final key = entry.key.toString().toLowerCase();
+        final value = entry.value.toString().trim();
+        if (key == 'referer' || key == 'origin' || key == 'user-agent') {
+          if (value.isNotEmpty) headers[key] = value;
+        }
+      }
+    }
+
+    isIframeLoaded = true;
+    isVideoSourceLoaded = true;
+    videoLoadingEventController.add(false);
+    notifyVideoSourceResolved(
+      rawUrl,
+      format: payload['format'] == 'hls'
+          ? VideoSourceFormat.hls
+          : VideoSourceFormat.auto,
+      httpHeaders: headers,
+    );
   }
 
   void disposeEventControllers() {
