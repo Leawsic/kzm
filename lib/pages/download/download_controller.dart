@@ -582,7 +582,7 @@ abstract class _DownloadController with Store {
           useLegacyParser: plugin.useLegacyParser,
           timeout: const Duration(seconds: 30),
         );
-        m3u8Url = source!.url;
+        m3u8Url = source.url;
       } on VideoSourceTimeoutException {
         if (lease.isCancelled) {
           wasCancelled = true;

@@ -134,7 +134,7 @@ class VideoWebviewImpl
   }
 
   Future<void> _onLoadStart() async {
-    if (!this.useLegacyParser) {
+    if (!useLegacyParser) {
       logEventController.add('Injecting blob parser script (onLoadStart)');
     }
     await webviewController?.evaluateJavascript(
@@ -142,7 +142,7 @@ class VideoWebviewImpl
         "payload => window.flutter_inappwebview.callHandler('VideoBridgeDebug', payload)",
       ),
     );
-    if (!this.useLegacyParser) {
+    if (!useLegacyParser) {
       await webviewController?.evaluateJavascript(source: """
         try { window.flutter_inappwebview.callHandler('LogBridge', 'BlobParser script loaded: ' + window.location.href); } catch(e) {}
         const _r_text = window.Response.prototype.text;
