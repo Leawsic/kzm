@@ -1,0 +1,121 @@
+---
+    name: "Windows build"
+
+    on:
+      push:
+        branches:
+          - main
+        paths-ignore:
+          - 'static/**'
+          - '**.md'
+          - '.gitignore'
+          - '.github/ISSUE_TEMPLATE/**'
+          - 'fastlane/**'
+      workflow_dispatch:
+
+    concurrency:
+      group: windows-build-${{ github.ref }}
+      cancel-in-progress: true
+
+    env:
+      DANDANAPI_APPID: ${{ secrets.DANDANAPI_APPID }}
+      DANDANAPI_KEY: ${{ secrets.DANDANAPI_KEY }}
+      KAZUMI_APPID: ${{ secrets.KAZUMI_APPID }}
+      KAZUMI_KEY: ${{ secrets.KAZUMI_KEY }}
+
+    jobs:
+      flutter-test:
+        runs-on: "ubuntu-latest"
+        permissions:
+          contents: read
+        steps:
+          - name: Clone repository
+            uses: actions/checkout@v4
+          - name: Set up Flutter
+            uses: subosito/flutter-action@v2.16.0
+            with:
+              channel: stable
+              flutter-version-file: pubspec.yaml
+              cache: true
+          - name: Restore pub cache
+            uses: actions/cache@v4
+            with:
+              path: ~/.pub-cache
+              key: pub-ubuntu-${{ hashFiles('pubspec.lock') }}
+              restore-keys: pub-ubuntu-
+          - name: Get Flutter dependencies
+            run: flutter pub get
+            shell: bash
+          - name: Run Flutter tests
+            run: flutter test
+            shell: bash
+
+      flutter-analyze:
+        runs-on: "ubuntu-latest"
+        permissions:
+          contents: read
+        steps:
+          - name: Clone repository
+            uses: actions/checkout@v4
+          - name: Set up Flutter
+            uses: subosito/flutter-action@v2.16.0
+            with:
+              channel: stable
+              flutter-version-file: pubspec.yaml
+              cache: true
+          - name: Restore pub cache
+            uses: actions/cache@v4
+            with:
+              path: ~/.pub-cache
+              key: pub-ubuntu-${{ hashFiles('pubspec.lock') }}
+              restore-keys: pub-ubuntu-
+          - name: Get Flutter dependencies
+            run: flutter pub get
+            shell: bash
+          - name: Analyze Flutter project
+            run: flutter analyze --no-fatal-infos --fatal-warnings
+            shell: bash
+
+      flutter-build-windows:
+        name: "Build for Windows"
+        needs: [flutter-test, flutter-analyze]
+        runs-on: "windows-latest"
+        permissions:
+          contents: read
+        steps:
+          - name: Clone repository
+            uses: actions/checkout@v4
+          - name: Enable Git longpaths
+            run: git config --system core.longpaths true
+          - name: Set up Flutter
+            uses: subosito/flutter-action@v2.16.0
+            with:
+              channel: stable
+              flutter-version-file: pubspec.yaml
+              cache: true
+          - name: Restore pub cache
+            uses: actions/cache@v4
+            with:
+              path: ~/AppData/Local/Pub/Cache
+              key: pub-windows-${{ hashFiles('pubspec.lock') }}
+              restore-keys: pub-windows-
+          - name: Get Flutter dependencies
+            run: flutter pub get
+            shell: bash
+          - name: Extract short commit SHA
+            run: echo "sha=${GITHUB_SHA:0:7}" >> $GITHUB_ENV
+            shell: bash
+          - name: Build Flutter for Windows
+            run: >-
+              flutter build windows
+              --dart-define=DANDANAPI_APPID=$env:DANDANAPI_APPID
+              --dart-define=DANDANAPI_KEY=$env:DANDANAPI_KEY
+              --dart-define=KAZUMI_APPID=$env:KAZUMI_APPID
+              --dart-define=KAZUMI_KEY=$env:KAZUMI_KEY
+          - name: Package windows build output
+            run: Compress-Archive build/windows/x64/runner/Release/* Kazumi_windows_${{ env.sha }}.zip
+          - name: Upload windows outputs
+            uses: actions/upload-artifact@v4
+            with:
+              name: windows_output
+              path: Kazumi_windows_*.zip

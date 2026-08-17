@@ -123,7 +123,6 @@
                   $tag = "${{ github.ref }}".Replace('refs/tags/', '')
                   echo "tag=$(echo $tag)" >> $env:GITHUB_ENV
           - run: echo "Kazumi_windows_${env:tag}.zip build progress"
-          - run: choco install yq
           - name: Enable Git longpaths
             run: git config --system core.longpaths true
           - name: Set up Flutter
@@ -131,11 +130,6 @@
             with:
               channel: stable
               flutter-version-file: pubspec.yaml
-          - name: Set up Java
-            uses: actions/setup-java@v4
-            with:
-              distribution: 'temurin'
-              java-version: '18'
           - run: flutter pub get
           - run: >-
               flutter build windows
